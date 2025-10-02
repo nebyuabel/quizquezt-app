@@ -8,9 +8,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "quizqueztappnew",
     "userInterfaceStyle": "automatic",
-    "notification": {
-      "vapidPublicKey": "YOUR_VAPID_PUBLIC_KEY"
-    },
+    "notification": {},
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
