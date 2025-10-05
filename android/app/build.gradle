@@ -84,13 +84,15 @@ android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+    // FIX: Update compileSdk from 34 to 35 to resolve splashscreen dependency issue
+    compileSdk 35
 
     namespace 'com.spacetime_0110.quizqueztappnew'
     defaultConfig {
         applicationId 'com.spacetime_0110.quizqueztappnew'
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 24
+        // FIX: Update targetSdk from 34 to 35 for compatibility
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0.0"
     }
@@ -124,6 +126,7 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
+    
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
@@ -149,6 +152,9 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
+    // FIX: Add explicit splashscreen dependency with compatible version
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
