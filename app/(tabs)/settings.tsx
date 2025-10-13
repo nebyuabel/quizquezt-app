@@ -14,6 +14,7 @@ import {
 import { useAppContext } from "@/context/ThemeContext";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Define the primary accent color
 const ACCENT_COLOR = "#4ade80";
@@ -41,10 +42,15 @@ export default function SettingsScreen() {
     }
     await activatePremium(premiumCode);
   };
-
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView
       className={`flex-1 ${darkMode ? "bg-stone-950" : "bg-white"}`}
+      style={{
+        flex: 1,
+        // Critical for Android - prevents content from going under navigation bar
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 60 : 0,
+      }}
     >
       {/* Header */}
       <View

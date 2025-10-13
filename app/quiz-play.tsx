@@ -10,6 +10,7 @@ import {
   Animated,
   StyleSheet,
   Easing,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { supabase } from "@/lib/supabaseClient";
@@ -20,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // --- INTERFACES ---
 interface Question {
@@ -384,10 +386,16 @@ export default function QuizPlayScreen() {
       </SafeAreaView>
     );
   }
+  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView
       className={`flex-1 ${darkMode ? "bg-stone-950" : "bg-white"}`}
+      style={{
+        flex: 1,
+        // Critical for Android - prevents content from going under navigation bar
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 60 : 0,
+      }}
     >
       <View className="flex-grow">
         <View

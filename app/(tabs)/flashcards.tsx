@@ -9,11 +9,13 @@ import {
   Alert,
   Modal,
   FlatList,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabaseClient";
 import { useAppContext } from "@/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // --- INTERFACES & CONSTANTS ---
 interface Flashcard {
@@ -84,7 +86,7 @@ export default function FlashcardsScreen() {
   const [modalSelectedSubject, setModalSelectedSubject] = useState<
     string | null
   >(null);
-
+  const insets = useSafeAreaInsets();
   // Fetch due cards for the current user
   const fetchDueCards = async () => {
     setDueCardsLoading(true);
@@ -280,6 +282,11 @@ export default function FlashcardsScreen() {
 
   return (
     <SafeAreaView
+    style={{
+      flex: 1,
+      // Critical for Android - prevents content from going under navigation bar
+      paddingBottom: Platform.OS === 'android' ? insets.bottom + 60 : 0
+    }}
       className={`flex-1 ${darkMode ? "bg-stone-950" : "bg-gray-100"}`}
     >
       <View className="flex-row items-center p-4">

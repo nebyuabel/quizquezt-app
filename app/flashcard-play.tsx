@@ -8,6 +8,7 @@ import {
   Alert,
   Animated,
   Pressable,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useAppContext } from "@/context/ThemeContext";
@@ -15,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabaseClient";
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // --- INTERFACES & CONSTANTS ---
 interface Flashcard {
@@ -259,10 +261,15 @@ export default function FlashcardPlayScreen() {
     outputRange: ["180deg", "360deg"],
   });
   const currentCard = flashcards[currentIndex];
-
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView
       className={`flex-1 ${darkMode ? "bg-stone-950" : "bg-gray-100"}`}
+      style={{
+        flex: 1,
+        // Critical for Android - prevents content from going under navigation bar
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 60 : 0,
+      }}
     >
       <View className="flex-row items-center p-4">
         <TouchableOpacity onPress={() => router.back()} className="p-2">

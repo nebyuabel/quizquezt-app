@@ -29,6 +29,7 @@ import * as ImagePicker from "expo-image-picker";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 import { useAppContext } from "@/context/ThemeContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // --- INTERFACES & CONSTANTS ---
 interface Profile {
@@ -236,10 +237,16 @@ export default function ProfileScreen() {
       </SafeAreaView>
     );
   }
+  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView
       className={`flex-1 ${darkMode ? "bg-[#121212]" : "bg-gray-100"}`}
+      style={{
+        flex: 1,
+        // Critical for Android - prevents content from going under navigation bar
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 60 : 0,
+      }}
     >
       <View className="flex-1">
         <ScrollView>

@@ -1,79 +1,112 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
+import { Platform, StatusBar, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-// No need for Notifications logic here, it's handled in root _layout.tsx now.
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
+  // Android-specific calculations
+  const androidTabBarHeight = 60;
+  const androidBottomPadding = Platform.OS === "android" ? 16 : 0;
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false, // Hide header for all tab screens; each screen will have custom content
-        tabBarStyle: {
-          backgroundColor: "#1f2937", // Dark background for the tab bar
-          borderTopWidth: 0, // No border at the top
-          paddingBottom: Platform.OS === "ios" ? 20 : 5, // Adjust padding for iOS safe area
-          height: Platform.OS === "ios" ? 80 : 60, // Adjust height for iOS safe area
-        },
-        tabBarActiveTintColor: "#AAFF00", // Purple active icon/label color
-        tabBarInactiveTintColor: "#9ca3af", // Gray inactive icon/label color
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "bold",
-        },
-        tabBarIconStyle: {
-          marginTop: 5, // Give icons a little space from the top
-        },
+    <View
+      style={{
+        flex: 1,
+        paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="home-outline" size={24} color={color} />
-          ),
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: "#1f2937",
+            borderTopWidth: 0,
+            // Android-specific styling
+            height: Platform.OS === "ios" ? 80 : androidTabBarHeight,
+            paddingBottom: Platform.OS === "ios" ? 20 : androidBottomPadding,
+            paddingHorizontal: 16,
+            // Extra Android padding for navigation bar
+            paddingBottom:
+              Platform.OS === "android"
+                ? insets.bottom > 0
+                  ? insets.bottom
+                  : 16
+                : 8,
+          },
+          tabBarActiveTintColor: "#AAFF00",
+          tabBarInactiveTintColor: "#9ca3af",
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: "bold",
+            // Android-specific label styling
+            marginBottom: Platform.OS === "android" ? 4 : 0,
+          },
+          tabBarIconStyle: {
+            marginTop: Platform.OS === "ios" ? 5 : 2,
+          },
         }}
-      />
-      <Tabs.Screen
-        name="leaderboard"
-        options={{
-          title: "Leaderboard",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="trophy-outline" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="notes"
-        options={{
-          title: "Notes",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="document-text-outline" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="flashcards"
-        options={{
-          title: "Flashcards",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="card-outline" size={24} color={color} />
-          ),
-        }}
-      />
-      {/*
-        The following screens are not intended to be directly accessible via tabs,
-        but rather through navigation from other parts of the app (e.g., Home screen icons).
-        'href: null' hides them from the tab bar but keeps them within the tab's stack context.
-      */}
-      <Tabs.Screen name="profile" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
-      <Tabs.Screen name="store" options={{ href: null }} />
+      >
+        <Tabs.Screen
+          name="home"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "home" : "home-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="leaderboard"
+          options={{
+            title: "Leaderboard",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "trophy" : "trophy-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="notes"
+          options={{
+            title: "Notes",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "document-text" : "document-text-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="flashcards"
+          options={{
+            title: "Flashcards",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "card" : "card-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
 
-      {/* This screen is implicitly removed via new home design */}
-
-      {/* The edit-profile screen has been merged into profile.tsx, so it's not a standalone route */}
-    </Tabs>
+        {/* Hidden tabs */}
+        <Tabs.Screen name="profile" options={{ href: null }} />
+        <Tabs.Screen name="settings" options={{ href: null }} />
+        <Tabs.Screen name="store" options={{ href: null }} />
+      </Tabs>
+    </View>
   );
 }

@@ -15,6 +15,8 @@ import { User } from "@supabase/supabase-js";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppContext } from "@/context/ThemeContext";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Platform } from "react-native";
 
 // --- INTERFACES & HELPERS ---
 const XP_TIERS = [
@@ -218,9 +220,16 @@ export default function LeaderboardScreen() {
     </TouchableOpacity>
   );
 
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView
       className={`flex-1 ${darkMode ? "bg-gray-950" : "bg-gray-50"}`}
+      style={{
+        flex: 1,
+        // Critical for Android - prevents content from going under navigation bar
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 60 : 0,
+      }}
     >
       {/* --- Custom Toast Component --- */}
       {toast.visible && (

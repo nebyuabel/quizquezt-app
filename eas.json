@@ -10,8 +10,10 @@
       "distribution": "internal"
     },
     "production": {
-      "node": "18.18.0",
-      "autoIncrement": true
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
     }
   },
   "cli": {

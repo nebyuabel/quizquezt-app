@@ -23,8 +23,8 @@ WebBrowser.maybeCompleteAuthSession();
 
 // Define the redirect URI for Google OAuth.
 const redirectUri = AuthSession.makeRedirectUri({
-  path: "/auth/callback",
   scheme: "quizqueztappnew",
+  path: "auth/callback",
 });
 
 const ACCENT_COLOR = "#4ade80";
@@ -99,27 +99,19 @@ export default function AuthScreen() {
         provider: "google",
         options: {
           redirectTo: redirectUri,
-          skipBrowserRedirect: true,
+          skipBrowserRedirect: false, // Change this to false
         },
       });
 
       if (error) throw error;
 
-      if (data.url) {
-        const result = await WebBrowser.openAuthSessionAsync(
-          data.url,
-          redirectUri
-        );
-
-        if (result.type === "success") {
-          // Session will be automatically handled by onAuthStateChange in AppProvider
-          // No need to manually schedule reminders — it’s handled globally
-        }
+      if (data?.url) {
+        // Use openBrowserAsync for better compatibility
+        await WebBrowser.openBrowserAsync(data.url);
       }
     } catch (error) {
-      if (error instanceof Error) {
-        Alert.alert("Error", error.message);
-      }
+      console.error("Google auth error:", error);
+      Alert.alert("Error", "Failed to sign in with Google");
     }
   };
 

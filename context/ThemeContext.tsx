@@ -309,26 +309,73 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const activatePremium = async (code: string) => {
-    if (code !== "PREMIUM123") {
-      Alert.alert("Invalid code");
+    if (!session?.user) {
+      Alert.alert("Error", "Please log in first.");
       return;
     }
 
     try {
+      // 1. Check if code exists and is valid
+      const { data: premiumCode, error: codeError } = await supabase
+        .from("premium_codes")
+        .select("*")
+        .eq("code", code.toUpperCase().trim())
+        .is("is_used", false)
+        .gte("expires_at", new Date().toISOString())
+        .single();
+
+      if (codeError || !premiumCode) {
+        Alert.alert(
+          "Invalid Code",
+          "This premium code is invalid or has expired."
+        );
+        return;
+      }
+
+      // 2. Check if user already has premium
+      if (userProfile?.is_premium) {
+        Alert.alert(
+          "Already Premium",
+          "You already have an active premium subscription."
+        );
+        return;
+      }
+
+      // 3. Activate premium for user
       const expires = new Date();
-      expires.setFullYear(expires.getFullYear() + 1);
+      expires.setFullYear(expires.getFullYear() + 1); // 1 year premium
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
-        .update({ is_premium: true, premium_until: expires.toISOString() })
-        .eq("id", session?.user?.id || "");
+        .update({
+          is_premium: true,
+          premium_until: expires.toISOString(),
+        })
+        .eq("id", session.user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
+      // 4. Mark code as used
+      const { error: markUsedError } = await supabase
+        .from("premium_codes")
+        .update({
+          is_used: true,
+          user_id_activated: session.user.id,
+          activated_at: new Date().toISOString(),
+        })
+        .eq("id", premiumCode.id);
+
+      if (markUsedError) throw markUsedError;
+
+      // 5. Refresh user profile
       await refreshUserProfile();
-      Alert.alert("Success", "Premium activated!");
+      Alert.alert(
+        "Success",
+        "Premium activated successfully! Enjoy your premium features."
+      );
     } catch (error) {
-      Alert.alert("Error", "Failed to activate premium.");
+      console.error("Premium activation error:", error);
+      Alert.alert("Error", "Failed to activate premium. Please try again.");
     }
   };
 

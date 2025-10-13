@@ -119,6 +119,10 @@ android {
         }
     }
     packagingOptions {
+         pickFirst 'lib/arm64-v8a/libworklets.so'
+        pickFirst 'lib/armeabi-v7a/libworklets.so'
+        pickFirst 'lib/x86/libworklets.so'
+        pickFirst 'lib/x86_64/libworklets.so'
         jniLibs {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
         }
@@ -155,6 +159,10 @@ dependencies {
 
     // FIX: Add explicit splashscreen dependency with compatible version
     implementation 'androidx.core:core-splashscreen:1.0.1'
+
+    implementation(project(':react-native-reanimated')) {
+        exclude group: 'com.worklets', module: 'worklets'
+    }
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

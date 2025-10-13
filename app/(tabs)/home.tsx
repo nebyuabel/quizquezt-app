@@ -12,11 +12,13 @@ import {
   Modal,
   Dimensions,
   FlatList,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Interface definitions
 interface UserProfile {
@@ -300,9 +302,17 @@ export default function HomeScreen() {
       </SafeAreaView>
     );
   }
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView
+      className="flex-1 bg-gray-900"
+      style={{
+        flex: 1,
+        // Critical for Android - prevents content from going under navigation bar
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 60 : 0,
+      }}
+    >
       {/* Header */}
       <View className="flex-row justify-between items-center p-4">
         <TouchableOpacity

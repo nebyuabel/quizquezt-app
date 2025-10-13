@@ -25,7 +25,18 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.spacetime_0110.quizqueztappnew",
-      "versionCode": 1
+      "versionCode": 1,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "quizqueztappnew"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

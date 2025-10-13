@@ -9,35 +9,64 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import { useAppContext } from "@/context/ThemeContext";
 import { supabase } from "@/lib/supabaseClient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+
+const { width } = Dimensions.get("window");
 
 // Define types
 interface StoreItem {
   id: string;
   name: string;
+  description: string;
   price: number;
-  type: "freeze" | "xp_boost";
+  type: "freeze" | "xp_boost" | "cosmetic";
   duration?: number;
+  icon: string;
+  gradient: string[];
 }
 
 export default function StoreScreen() {
   const { darkMode } = useAppContext();
   const [items] = useState<StoreItem[]>([
-    { id: "freeze1", name: "Streak Freeze", price: 50, type: "freeze" },
+    {
+      id: "freeze1",
+      name: "Streak Freeze",
+      description: "Protect your streak for one day",
+      price: 50,
+      type: "freeze",
+      icon: "snow",
+      gradient: ["#667eea", "#764ba2"],
+    },
     {
       id: "xpboost1",
-      name: "XP Boost (5 uses)",
+      name: "XP Boost",
+      description: "5 uses of double XP",
       price: 100,
       type: "xp_boost",
       duration: 5,
+      icon: "rocket",
+      gradient: ["#f093fb", "#f5576c"],
+    },
+    {
+      id: "premium1",
+      name: "Premium Avatar",
+      description: "Exclusive animated avatar",
+      price: 200,
+      type: "cosmetic",
+      icon: "sparkles",
+      gradient: ["#4facfe", "#00f2fe"],
     },
   ]);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
   // Fetch user's coin balance
   useEffect(() => {
@@ -113,12 +142,12 @@ export default function StoreScreen() {
     if (balance < item.price) {
       Alert.alert(
         "Insufficient Coins",
-        "You need more coins to buy this item."
+        `You need ${item.price - balance} more coins to buy ${item.name}.`
       );
       return;
     }
 
-    setLoading(true);
+    setPurchasingId(item.id);
     try {
       const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
@@ -159,83 +188,154 @@ export default function StoreScreen() {
           .eq("id", data.user.id);
 
         if (updateError) throw updateError;
-
-        // You might want to update a separate boosts table here
-        console.log("XP Boost purchased - implement boost tracking");
       }
 
       setBalance(newBalance);
       Alert.alert(
-        "Purchase Successful",
+        "Purchase Successful! 🎉",
         `${item.name} has been added to your account!`
       );
     } catch (error: any) {
       console.error("Purchase error:", error.message);
       Alert.alert("Error", "Failed to complete purchase. Please try again.");
     } finally {
-      setLoading(false);
+      setPurchasingId(null);
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, darkMode && styles.headerDark]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back-outline" size={24} color="#38E07B" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Store</Text>
-        <View style={{ width: 24 }} />
-      </View>
+  const getIconName = (icon: string) => {
+    const icons: { [key: string]: string } = {
+      snow: "snow",
+      rocket: "rocket-outline",
+      sparkles: "sparkles",
+    };
+    return icons[icon] || "cube-outline";
+  };
 
-      <ScrollView style={styles.scrollView}>
-        {/* Balance Display */}
-        <View style={[styles.balanceCard, darkMode && styles.cardDark]}>
-          <View style={styles.balanceRow}>
-            <Ionicons name="cash-outline" size={24} color="#FACC15" />
-            <Text style={[styles.balanceLabel, darkMode && styles.textDark]}>
-              Your Balance:
-            </Text>
+  return (
+    <SafeAreaView style={[styles.container, darkMode && styles.containerDark]}>
+      {/* Header with Gradient */}
+      <LinearGradient
+        colors={darkMode ? ["#0f172a", "#1e293b"] : ["#38E07B", "#22c55e"]}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Store</Text>
+            <Text style={styles.headerSubtitle}>Premium Items & Boosts</Text>
           </View>
-          <Text style={styles.balanceAmount}>
-            {balance} <Ionicons name="cash-outline" size={20} color="#38E07B" />
-          </Text>
+          <View style={styles.coinBadge}>
+            <Ionicons name="sparkles" size={16} color="#FACC15" />
+            <Text style={styles.coinText}>{balance}</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Balance Card */}
+        <View style={[styles.balanceCard, darkMode && styles.balanceCardDark]}>
+          <LinearGradient
+            colors={["#38E07B", "#22c55e"]}
+            style={styles.balanceGradient}
+          >
+            <View style={styles.balanceContent}>
+              <View style={styles.balanceInfo}>
+                <Text style={styles.balanceLabel}>Available Balance</Text>
+                <Text style={styles.balanceAmount}>{balance} Coins</Text>
+              </View>
+              <View style={styles.coinIcon}>
+                <Ionicons name="cash" size={32} color="#FFFFFF" />
+              </View>
+            </View>
+          </LinearGradient>
         </View>
 
-        {/* Store Items */}
+        {/* Featured Items */}
+        <Text
+          style={[styles.sectionTitle, darkMode && styles.sectionTitleDark]}
+        >
+          Featured Items
+        </Text>
+
         {items.map((item) => (
-          <View
-            key={item.id}
-            style={[styles.itemCard, darkMode && styles.cardDark]}
-          >
-            <View>
-              <Text style={[styles.itemName, darkMode && styles.textDark]}>
-                {item.name}
-              </Text>
-              <Text style={styles.itemPrice}>
-                {item.price}{" "}
-                <Ionicons name="cash-outline" size={16} color="#FACC15" />
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[
-                styles.buyButton,
-                (loading || balance < item.price) && styles.buyButtonDisabled,
-              ]}
-              onPress={() => handlePurchase(item)}
-              disabled={loading || balance < item.price}
+          <View key={item.id} style={styles.itemWrapper}>
+            <LinearGradient
+              colors={item.gradient}
+              style={[styles.itemCard, darkMode && styles.itemCardDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
             >
-              {loading ? (
-                <ActivityIndicator color="#111827" size="small" />
-              ) : (
-                <Text style={styles.buyButtonText}>Buy</Text>
-              )}
-            </TouchableOpacity>
+              <View style={styles.itemContent}>
+                <View style={styles.itemIconContainer}>
+                  <Ionicons
+                    name={getIconName(item.icon)}
+                    size={32}
+                    color="#FFFFFF"
+                  />
+                </View>
+
+                <View style={styles.itemDetails}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemDescription}>{item.description}</Text>
+                  <View style={styles.priceContainer}>
+                    <Ionicons name="cash" size={16} color="#FACC15" />
+                    <Text style={styles.itemPrice}>{item.price}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.buyButton,
+                    balance < item.price && styles.buyButtonDisabled,
+                  ]}
+                  onPress={() => handlePurchase(item)}
+                  disabled={balance < item.price || purchasingId === item.id}
+                >
+                  {purchasingId === item.id ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.buyButtonText}>
+                      {balance < item.price ? "Need Coins" : "Purchase"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
         ))}
+
+        {/* Coming Soon Section */}
+        <View
+          style={[styles.comingSoonCard, darkMode && styles.comingSoonCardDark]}
+        >
+          <Ionicons name="time-outline" size={32} color="#6b7280" />
+          <Text
+            style={[
+              styles.comingSoonText,
+              darkMode && styles.comingSoonTextDark,
+            ]}
+          >
+            More exciting items coming soon!
+          </Text>
+          <Text
+            style={[
+              styles.comingSoonSubtext,
+              darkMode && styles.comingSoonSubtextDark,
+            ]}
+          >
+            Check back regularly for new boosts and cosmetics
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -244,103 +344,204 @@ export default function StoreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#f8fafc",
+  },
+  containerDark: {
+    backgroundColor: "#0f172a",
   },
   header: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 2,
-    borderBottomColor: "#38E07B",
-  },
-  headerDark: {
-    backgroundColor: "#121212",
-    borderBottomColor: "#38E07B",
   },
   backButton: {
     padding: 8,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#38E07B",
+  headerCenter: {
+    alignItems: "center",
     flex: 1,
-    textAlign: "center",
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#e2e8f0",
+    fontWeight: "500",
+  },
+  coinBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 4,
+  },
+  coinText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
   },
   scrollView: {
     flex: 1,
-    padding: 16,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   balanceCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    marginBottom: 24,
-    alignItems: "center",
+    borderRadius: 20,
+    marginBottom: 30,
+    shadowColor: "#38E07B",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  cardDark: {
-    backgroundColor: "#1E1E1E",
-    borderColor: "#2F2F2F",
+  balanceCardDark: {
+    shadowColor: "#38E07B",
   },
-  balanceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
+  balanceGradient: {
+    borderRadius: 20,
+    padding: 24,
   },
-  balanceLabel: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  textDark: {
-    color: "#FFFFFF",
-  },
-  balanceAmount: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#38E07B",
-  },
-  itemCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    marginBottom: 16,
+  balanceContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  itemName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 4,
+  balanceInfo: {
+    flex: 1,
   },
-  itemPrice: {
+  balanceLabel: {
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+    marginBottom: 4,
+    opacity: 0.9,
+  },
+  balanceAmount: {
+    color: "#FFFFFF",
+    fontSize: 32,
+    fontWeight: "800",
+  },
+  coinIcon: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    padding: 12,
+    borderRadius: 16,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginBottom: 20,
+  },
+  sectionTitleDark: {
+    color: "#f1f5f9",
+  },
+  itemWrapper: {
+    marginBottom: 16,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  itemCard: {
+    borderRadius: 20,
+    padding: 20,
+  },
+  itemCardDark: {
+    shadowColor: "#000",
+  },
+  itemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  itemIconContainer: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    padding: 12,
+    borderRadius: 12,
+  },
+  itemDetails: {
+    flex: 1,
+  },
+  itemName: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  itemDescription: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  itemPrice: {
     color: "#FACC15",
+    fontSize: 18,
+    fontWeight: "700",
   },
   buyButton: {
-    backgroundColor: "#38E07B",
-    paddingHorizontal: 24,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
-    minWidth: 80,
+    minWidth: 100,
     alignItems: "center",
   },
   buyButtonDisabled: {
-    backgroundColor: "#9CA3AF",
+    backgroundColor: "rgba(255,255,255,0.4)",
   },
   buyButtonText: {
-    color: "#111827",
-    fontSize: 16,
+    color: "#1e293b",
+    fontSize: 14,
     fontWeight: "700",
+  },
+  comingSoonCard: {
+    backgroundColor: "#f1f5f9",
+    padding: 24,
+    borderRadius: 20,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  comingSoonCardDark: {
+    backgroundColor: "#1e293b",
+  },
+  comingSoonText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#475569",
+    textAlign: "center",
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  comingSoonTextDark: {
+    color: "#cbd5e1",
+  },
+  comingSoonSubtext: {
+    fontSize: 14,
+    color: "#64748b",
+    textAlign: "center",
+  },
+  comingSoonSubtextDark: {
+    color: "#94a3b8",
   },
 });
