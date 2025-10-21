@@ -22,9 +22,10 @@ import { useAppContext } from "@/context/ThemeContext";
 WebBrowser.maybeCompleteAuthSession();
 
 // Define the redirect URI for Google OAuth.
+// In your index.tsx
 const redirectUri = AuthSession.makeRedirectUri({
   scheme: "quizqueztappnew",
-  path: "auth/callback",
+  path: "auth/callback", // Make sure this matches your callback route
 });
 
 const ACCENT_COLOR = "#4ade80";
@@ -99,15 +100,36 @@ export default function AuthScreen() {
         provider: "google",
         options: {
           redirectTo: redirectUri,
-          skipBrowserRedirect: false, // Change this to false
+          skipBrowserRedirect: true, // Make sure this is true
         },
       });
 
       if (error) throw error;
 
       if (data?.url) {
-        // Use openBrowserAsync for better compatibility
-        await WebBrowser.openBrowserAsync(data.url);
+        // Use openAuthSessionAsync for proper OAuth handling
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUri
+        );
+
+        if (result.type === "success") {
+          // Parse the URL to extract the session
+          const url = result.url;
+          const params = new URL(url).searchParams;
+
+          // Check if we have an access token in the URL
+          if (params.get("access_token") || params.get("code")) {
+            // The session should be automatically handled by Supabase
+            // Wait a moment for the session to be set
+            setTimeout(() => {
+              router.replace("/(tabs)/home");
+            }, 1000);
+          }
+        } else if (result.type === "cancel") {
+          // User cancelled the OAuth flow
+          console.log("Google OAuth cancelled");
+        }
       }
     } catch (error) {
       console.error("Google auth error:", error);

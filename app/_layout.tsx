@@ -5,6 +5,7 @@ import { Stack, router } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { supabase } from "@/lib/supabaseClient"; // Using relative path for root layout
 import { AppProvider } from "@/context/ThemeContext"; // Using relative path for root layout
+import OfflineBanner from "@/components/offlineBanner";
 
 // Properly type the notification handler
 Notifications.setNotificationHandler({
@@ -62,6 +63,7 @@ export default function RootLayout() {
   return (
     <AppProvider>
       <Stack>
+        <OfflineBanner />
         {/* The main authentication screen */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
         {/* The (tabs) group which contains your tabbed navigation */}
@@ -78,6 +80,7 @@ export default function RootLayout() {
           name="notes/note-details"
           options={{ headerShown: false }}
         />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       </Stack>
     </AppProvider>
   );

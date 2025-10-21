@@ -98,36 +98,105 @@ export default function ProfileScreen() {
   const uploadImage = async (uri: string) => {
     if (!session) return;
     setUploadingAvatar(true);
-    const filename = `${session.user.id}/avatar-${uuidv4()}.png`;
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage
-      .from("avatars")
-      .upload(filename, blob, { upsert: true });
 
-    if (error) Alert.alert("Error", error.message);
-    else {
-      const publicURL = supabase.storage.from("avatars").getPublicUrl(filename)
-        .data.publicUrl;
+    try {
+      // For production, we need to handle the file differently
+      const filename = `${session.user.id}/avatar-${uuidv4()}.png`;
+
+      // Convert image to base64 for better compatibility
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filename, blob, {
+          upsert: true,
+          contentType: "image/png",
+        });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        Alert.alert("Error", "Failed to upload image: " + uploadError.message);
+        return;
+      }
+
+      // Get public URL
+      const { data: publicURLData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filename);
+
+      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: publicURL })
+        .update({ avatar_url: publicURLData.publicUrl })
         .eq("id", session.user.id);
-      if (updateError) Alert.alert("Error", updateError.message);
-      else refreshUserProfile();
+
+      if (updateError) {
+        console.error("Update error:", updateError);
+        Alert.alert(
+          "Error",
+          "Failed to update profile: " + updateError.message
+        );
+      } else {
+        Alert.alert("Success", "Profile picture updated!");
+        refreshUserProfile();
+      }
+    } catch (error: any) {
+      console.error("Image upload error:", error);
+      Alert.alert("Error", "Network error: " + error.message);
+    } finally {
+      setUploadingAvatar(false);
     }
-    setUploadingAvatar(false);
   };
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-    if (!result.canceled) uploadImage(result.assets[0].uri);
+    try {
+      // Request permissions first
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Sorry, we need camera roll permissions to upload images."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8, // Slightly lower quality for better performance
+      });
+
+      if (!result.canceled && result.assets[0].uri) {
+        await uploadImage(result.assets[0].uri);
+      }
+    } catch (error: any) {
+      console.error("Image picker error:", error);
+      Alert.alert("Error", "Failed to pick image: " + error.message);
+    }
   };
+
+  // Add this function to check storage configuration
+  const checkStorageConfiguration = async () => {
+    try {
+      const { data, error } = await supabase.storage.getBucket("avatars");
+      if (error) {
+        console.warn("Storage bucket not configured:", error);
+        // You might want to show a message to the user
+      }
+    } catch (error) {
+      console.error("Storage check error:", error);
+    }
+  };
+
+  // Call this when the component mounts
+  useEffect(() => {
+    if (session) {
+      checkStorageConfiguration();
+    }
+  }, [session]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

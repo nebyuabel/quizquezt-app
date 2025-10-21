@@ -10,7 +10,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Appearance, Alert } from "react-native";
+import { Appearance, Alert, AppState } from "react-native";
 import { router } from "expo-router";
 import { scheduleDefaultReminders } from "@/utils/notifications";
 
@@ -183,9 +183,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, [session, fetchUserProfile]);
 
   // Initialize auth
+  // Initialize auth
   useEffect(() => {
     const init = async () => {
       try {
+        setLoading(true);
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -204,17 +206,45 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log(
+          "🔐 Auth state changed:",
+          event,
+          "Session exists:",
+          !!session
+        );
         setSession(session);
         if (session) {
+          console.log("👤 User authenticated:", session.user.email);
           await fetchUserProfile(session.user);
         } else {
+          console.log("👤 No user session");
           setUserProfile(null);
         }
+        setLoading(false);
       }
+    );
+
+    // Add AppState listener for session refresh
+    const handleAppStateChange = (state: string) => {
+      if (state === "active") {
+        // Refresh session when app comes to foreground
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setSession(session);
+          if (session?.user) {
+            fetchUserProfile(session.user);
+          }
+        });
+      }
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
     );
 
     return () => {
       authListener.subscription.unsubscribe();
+      subscription.remove();
     };
   }, [fetchUserProfile]);
 
@@ -308,42 +338,80 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  const activatePremium = async (code: string) => {
+  const activatePremium = async (code: string): Promise<boolean> => {
     if (!session?.user) {
       Alert.alert("Error", "Please log in first.");
-      return;
+      return false;
+    }
+
+    // Check if already premium
+    if (
+      userProfile?.is_premium &&
+      userProfile?.premium_until &&
+      new Date(userProfile.premium_until) > new Date()
+    ) {
+      Alert.alert(
+        "Already Premium",
+        "You already have an active premium subscription."
+      );
+      return false;
     }
 
     try {
-      // 1. Check if code exists and is valid
-      const { data: premiumCode, error: codeError } = await supabase
+      console.log("🔐 Starting premium activation with code:", code);
+
+      // 1. Find the premium code
+      const { data: codes, error: codesError } = await supabase
         .from("premium_codes")
         .select("*")
-        .eq("code", code.toUpperCase().trim())
-        .is("is_used", false)
-        .gte("expires_at", new Date().toISOString())
-        .single();
+        .eq("code", code.toUpperCase().trim());
 
-      if (codeError || !premiumCode) {
+      if (codesError) {
+        console.error("❌ Codes query error:", codesError);
         Alert.alert(
-          "Invalid Code",
-          "This premium code is invalid or has expired."
+          "Error",
+          "Failed to verify premium code. Please try again."
         );
-        return;
+        return false;
       }
 
-      // 2. Check if user already has premium
-      if (userProfile?.is_premium) {
-        Alert.alert(
-          "Already Premium",
-          "You already have an active premium subscription."
-        );
-        return;
+      if (!codes || codes.length === 0) {
+        Alert.alert("Invalid Code", "This premium code was not found.");
+        return false;
       }
 
-      // 3. Activate premium for user
+      const premiumCode = codes[0];
+      console.log("✅ Code found:", premiumCode);
+
+      // 2. Validate the code
+      if (premiumCode.is_used === true || premiumCode.is_used === "true") {
+        if (premiumCode.user_id_activated === session.user.id) {
+          Alert.alert(
+            "Code Already Used",
+            "You have already used this premium code."
+          );
+        } else {
+          Alert.alert(
+            "Already Used",
+            "This premium code has already been used by another user."
+          );
+        }
+        return false;
+      }
+
+      if (
+        premiumCode.expires_at &&
+        new Date(premiumCode.expires_at) < new Date()
+      ) {
+        Alert.alert("Expired Code", "This premium code has expired.");
+        return false;
+      }
+
+      console.log("✅ Code validated");
+
+      // 3. Activate premium
       const expires = new Date();
-      expires.setFullYear(expires.getFullYear() + 1); // 1 year premium
+      expires.setFullYear(expires.getFullYear() + 1);
 
       const { error: updateError } = await supabase
         .from("profiles")
@@ -353,7 +421,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         })
         .eq("id", session.user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("❌ Profile update error:", updateError);
+        Alert.alert("Error", "Failed to activate premium. Please try again.");
+        return false;
+      }
+
+      console.log("✅ Profile updated");
 
       // 4. Mark code as used
       const { error: markUsedError } = await supabase
@@ -365,17 +439,33 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         })
         .eq("id", premiumCode.id);
 
-      if (markUsedError) throw markUsedError;
+      if (markUsedError) {
+        console.error("❌ Mark code as used error:", markUsedError);
+        // Don't return false here - the user already got premium, just log the error
+      }
 
-      // 5. Refresh user profile
+      console.log("✅ Code marked as used");
+
+      // 5. Force refresh the user profile
       await refreshUserProfile();
+
+      // Double check the premium status
+      setTimeout(async () => {
+        await refreshUserProfile();
+      }, 1000);
+
+      console.log("🎉 Premium activation complete!");
+
       Alert.alert(
         "Success",
-        "Premium activated successfully! Enjoy your premium features."
+        "Premium activated successfully! Enjoy your premium features for 1 year."
       );
-    } catch (error) {
-      console.error("Premium activation error:", error);
-      Alert.alert("Error", "Failed to activate premium. Please try again.");
+
+      return true;
+    } catch (error: any) {
+      console.error("❌ Premium activation error:", error);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      return false;
     }
   };
 

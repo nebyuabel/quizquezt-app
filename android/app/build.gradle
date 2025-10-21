@@ -82,6 +82,14 @@ def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
     ndkVersion rootProject.ext.ndkVersion
+    splits {
+        abi {
+            enable true
+            reset()
+            include "arm64-v8a", "armeabi-v7a" // Only ARM for smaller size
+            universalApk false
+        }
+    }
 
     buildToolsVersion rootProject.ext.buildToolsVersion
     // FIX: Update compileSdk from 34 to 35 to resolve splashscreen dependency issue
@@ -105,10 +113,15 @@ android {
         }
     }
     buildTypes {
+        
         debug {
             signingConfig signingConfigs.debug
         }
         release {
+             minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            proguardFiles "${project.rootDir}/../node_modules/react-native/android/proguard-rules.pro"
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug

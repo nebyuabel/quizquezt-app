@@ -273,25 +273,36 @@ export default function HomeScreen() {
     });
   };
 
-  // --- Render Subject Grid (2 columns) ---
+  // --- Render Subject Grid (2 columns) - FIXED ALIGNMENT ---
   const renderSubjectItem = ({
     item,
   }: {
     item: { name: string; icon: string };
   }) => (
     <TouchableOpacity
-      className="bg-gray-800 p-4 rounded-xl gap-3 m-2 flex-1"
+      className="bg-gray-800 p-4 rounded-xl gap-3 m-2 flex-1 min-h-[120px]"
       onPress={() => {
         setModalSelectedSubject(item.name);
         setIsSelectionModalVisible(true);
       }}
     >
-      <View className="size-12 flex items-center justify-center rounded-lg bg-gray-700">
-        <Ionicons name={item.icon as any} size={32} color="#38e07b" />
+      {/* Centered Icon Container */}
+      <View className="flex items-center justify-center mb-2">
+        <View className="size-12 flex items-center justify-center rounded-lg bg-gray-700">
+          <Ionicons name={item.icon as any} size={32} color="#38e07b" />
+        </View>
       </View>
-      <Text className="text-white text-base font-medium text-center">
-        {item.name}
-      </Text>
+
+      {/* Centered Text */}
+      <View className="flex-1 justify-center">
+        <Text
+          className="text-white text-base font-medium text-center"
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {item.name}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
