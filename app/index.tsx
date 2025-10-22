@@ -122,9 +122,6 @@ export default function AuthScreen() {
           if (params.get("access_token") || params.get("code")) {
             // The session should be automatically handled by Supabase
             // Wait a moment for the session to be set
-            setTimeout(() => {
-              router.replace("/(tabs)/home");
-            }, 1000);
           }
         } else if (result.type === "cancel") {
           // User cancelled the OAuth flow

@@ -1,15 +1,11 @@
-// lib/storage.ts
+// lib/storage.ts (Corrected)
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Custom storage adapter that handles web environment
+// Custom storage adapter for Supabase that uses AsyncStorage
 export const customStorage = {
   getItem: async (key: string): Promise<string | null> => {
     try {
-      // Check if we're in a web environment
-      if (typeof window !== "undefined") {
-        return await AsyncStorage.getItem(key);
-      }
-      return null;
+      return await AsyncStorage.getItem(key);
     } catch (error) {
       console.warn("Storage getItem error:", error);
       return null;
@@ -17,18 +13,14 @@ export const customStorage = {
   },
   setItem: async (key: string, value: string): Promise<void> => {
     try {
-      if (typeof window !== "undefined") {
-        await AsyncStorage.setItem(key, value);
-      }
+      await AsyncStorage.setItem(key, value);
     } catch (error) {
       console.warn("Storage setItem error:", error);
     }
   },
   removeItem: async (key: string): Promise<void> => {
     try {
-      if (typeof window !== "undefined") {
-        await AsyncStorage.removeItem(key);
-      }
+      await AsyncStorage.removeItem(key);
     } catch (error) {
       console.warn("Storage removeItem error:", error);
     }
