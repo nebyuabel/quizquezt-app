@@ -15,7 +15,8 @@ export default function TabLayout() {
     <View
       style={{
         flex: 1,
-        paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        // Remove the top padding that was causing white space
+        // StatusBar is handled by SafeAreaView in each screen
       }}
     >
       <Tabs
@@ -25,8 +26,10 @@ export default function TabLayout() {
             backgroundColor: "#1f2937",
             borderTopWidth: 0,
             height: Platform.OS === "ios" ? 80 : 60,
-            paddingBottom:
-              Platform.OS === "ios" ? 20 : Math.max(insets.bottom, 16), // ensures min 16px on Android
+            // Ensure the tab bar doesn't go under the device's navigation bar
+            paddingBottom: Platform.OS === "android" 
+              ? Math.max(insets.bottom, 16) 
+              : 20,
             paddingHorizontal: 16,
           },
           tabBarActiveTintColor: "#AAFF00",

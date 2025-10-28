@@ -1,11 +1,12 @@
 import "../global.css";
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator, View, Platform } from "react-native";
+import { ActivityIndicator, View, Platform, StatusBar } from "react-native";
 import { Stack, router } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { supabase } from "@/lib/supabaseClient"; // Using relative path for root layout
 import { AppProvider } from "@/context/ThemeContext"; // Using relative path for root layout
 import OfflineBanner from "@/components/offlineBanner";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // Properly type the notification handler
 Notifications.setNotificationHandler({
@@ -61,27 +62,31 @@ export default function RootLayout() {
   }
 
   return (
-    <AppProvider>
-      <Stack>
-        <OfflineBanner />
-        {/* The main authentication screen */}
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        {/* The (tabs) group which contains your tabbed navigation */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        {/*
-          Other screens not part of tabs, but still in the main stack.
-          These will be accessible via router.push() from tab screens.
-          Note: quiz-play is navigated to from the home screen's quiz section.
-          profile, settings, store are accessed from icons on the home screen.
-        */}
-        <Stack.Screen name="quiz-play" options={{ headerShown: false }} />
-        <Stack.Screen name="flashcard-play" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="notes/note-details"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-      </Stack>
-    </AppProvider>
+    <SafeAreaProvider>
+      {/* Set status bar for Android */}
+      {Platform.OS === 'android' && <StatusBar translucent backgroundColor="transparent" />}
+      <AppProvider>
+        <Stack>
+          <OfflineBanner />
+          {/* The main authentication screen */}
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          {/* The (tabs) group which contains your tabbed navigation */}
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          {/*
+            Other screens not part of tabs, but still in the main stack.
+            These will be accessible via router.push() from tab screens.
+            Note: quiz-play is navigated to from the home screen's quiz section.
+            profile, settings, store are accessed from icons on the home screen.
+          */}
+          <Stack.Screen name="quiz-play" options={{ headerShown: false }} />
+          <Stack.Screen name="flashcard-play" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="notes/note-details"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+        </Stack>
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }

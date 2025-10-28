@@ -100,7 +100,7 @@ export default function AuthScreen() {
         provider: "google",
         options: {
           redirectTo: redirectUri,
-          skipBrowserRedirect: true, // Make sure this is true
+          skipBrowserRedirect: true,
         },
       });
 
@@ -117,11 +117,33 @@ export default function AuthScreen() {
           // Parse the URL to extract the session
           const url = result.url;
           const params = new URL(url).searchParams;
-
-          // Check if we have an access token in the URL
-          if (params.get("access_token") || params.get("code")) {
-            // The session should be automatically handled by Supabase
-            // Wait a moment for the session to be set
+          const code = params.get("code");
+          const accessToken = params.get("access_token");
+          
+          console.log("Auth success, code or token present:", !!code || !!accessToken);
+          
+          // Explicitly exchange the code for a session
+          if (code || accessToken) {
+            try {
+              const { data, error } = await supabase.auth.exchangeCodeForSession(code || accessToken || "");
+              
+              if (error) {
+                console.error("Error exchanging code:", error);
+                Alert.alert("Authentication Error", "Failed to complete authentication");
+              } else if (data.session) {
+                console.log("Session established:", data.session.user.email);
+                router.replace("/(tabs)/home");
+                return;
+              }
+            } catch (exchangeError) {
+              console.error("Code exchange error:", exchangeError);
+            }
+          }
+          
+          // Fallback: check if we have a session after the redirect
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            router.replace("/(tabs)/home");
           }
         } else if (result.type === "cancel") {
           // User cancelled the OAuth flow
