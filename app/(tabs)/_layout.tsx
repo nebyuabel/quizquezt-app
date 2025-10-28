@@ -24,17 +24,10 @@ export default function TabLayout() {
           tabBarStyle: {
             backgroundColor: "#1f2937",
             borderTopWidth: 0,
-            // Android-specific styling
-            height: Platform.OS === "ios" ? 80 : androidTabBarHeight,
-            paddingBottom: Platform.OS === "ios" ? 20 : androidBottomPadding,
-            paddingHorizontal: 16,
-            // Extra Android padding for navigation bar
+            height: Platform.OS === "ios" ? 80 : 60,
             paddingBottom:
-              Platform.OS === "android"
-                ? insets.bottom > 0
-                  ? insets.bottom
-                  : 16
-                : 8,
+              Platform.OS === "ios" ? 20 : Math.max(insets.bottom, 16), // ensures min 16px on Android
+            paddingHorizontal: 16,
           },
           tabBarActiveTintColor: "#AAFF00",
           tabBarInactiveTintColor: "#9ca3af",

@@ -394,7 +394,7 @@ export default function QuizPlayScreen() {
       style={{
         flex: 1,
         // Critical for Android - prevents content from going under navigation bar
-        paddingBottom: Platform.OS === "android" ? insets.bottom + 60 : 0,
+        paddingBottom: Platform.OS === "android" ? insets.bottom : 0,
       }}
     >
       <View className="flex-grow">

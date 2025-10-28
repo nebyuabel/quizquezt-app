@@ -135,7 +135,7 @@ export default function AuthScreen() {
   };
 
   // If the user is already logged in, redirect them to the home screen.
-  if (session && userProfile) {
+  if (session) {
     router.replace("/(tabs)/home");
     return null;
   }
@@ -150,33 +150,6 @@ export default function AuthScreen() {
   }
 
   // Onboarding Screen
-  if (showOnboarding) {
-    return (
-      <SafeAreaView className="flex-1 justify-center items-center p-6 bg-stone-950">
-        <View className="w-full max-w-sm mx-auto mb-8">
-          <View className="aspect-[1/1] w-full overflow-hidden rounded-2xl">
-            <View className="w-full h-full bg-stone-800 flex items-center justify-center">
-              <Ionicons name="school-outline" size={150} color={ACCENT_COLOR} />
-            </View>
-          </View>
-        </View>
-        <Text className="text-4xl font-extrabold text-center mb-2 text-white">
-          QuizQuest
-        </Text>
-        <Text className="text-lg text-center mb-8 text-stone-400">
-          Your personal learning assistant for grades 9-12. Dive into custom
-          notes, flashcards, and quizzes to ace any subject.
-        </Text>
-
-        <TouchableOpacity
-          className="w-full p-4 rounded-lg items-center mb-4 shadow-lg bg-[#4ade80]"
-          onPress={() => setShowOnboarding(false)}
-        >
-          <Text className="text-white text-xl font-bold">Get Started</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
 
   // Auth Screen
   return (

@@ -282,11 +282,11 @@ export default function FlashcardsScreen() {
 
   return (
     <SafeAreaView
-    style={{
-      flex: 1,
-      // Critical for Android - prevents content from going under navigation bar
-      paddingBottom: Platform.OS === 'android' ? insets.bottom + 60 : 0
-    }}
+      style={{
+        flex: 1,
+        // Critical for Android - prevents content from going under navigation bar
+        paddingBottom: Platform.OS === "android" ? insets.bottom : 0,
+      }}
       className={`flex-1 ${darkMode ? "bg-stone-950" : "bg-gray-100"}`}
     >
       <View className="flex-row items-center p-4">

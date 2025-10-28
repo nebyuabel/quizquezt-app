@@ -54,15 +54,7 @@ export default function StoreScreen() {
       icon: "rocket",
       gradient: ["#f093fb", "#f5576c"],
     },
-    {
-      id: "premium1",
-      name: "Premium Avatar",
-      description: "Exclusive animated avatar",
-      price: 200,
-      type: "cosmetic",
-      icon: "sparkles",
-      gradient: ["#4facfe", "#00f2fe"],
-    },
+  
   ]);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(false);
