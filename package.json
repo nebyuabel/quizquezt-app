@@ -11,7 +11,7 @@
     "lint": "expo lint",
     "build": "npx expo export -p web",
     "dev": "expo start --web",
-    "vercel-build": "npx expo export -p web"
+    "vercel-build": "npx expo export -p web && node scripts/vercel-build.js"
   },
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",

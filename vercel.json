@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "quizquezt",
   "builds": [
     {
       "src": "package.json",
@@ -12,9 +11,26 @@
   ],
   "routes": [
     {
+      "src": "/_expo/static/(.*)",
+      "dest": "/_expo/static/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/icon-(.*).png",
+      "dest": "/icon-$1.png"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ],
-  "buildCommand": "npx expo export -p web"
+  "buildCommand": "npx expo export -p web",
+  "outputDirectory": "dist"
 }
