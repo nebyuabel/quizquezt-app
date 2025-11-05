@@ -17,9 +17,14 @@ import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppContext } from "@/context/ThemeContext";
+// Add these imports at the top
 
 // Set up WebBrowser to dismiss the auth session
 WebBrowser.maybeCompleteAuthSession();
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
 
 // Define the redirect URI for Google OAuth.
 // In your index.tsx
@@ -37,9 +42,92 @@ export default function AuthScreen() {
   const [password, setPassword] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
   // ✅ REMOVED: useEffect that called scheduleDefaultReminders — now handled in AppProvider
+  // Enhanced PWA install handler
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
 
+    const handleBeforeInstallPrompt = (e: Event) => {
+      console.log("✅ PWA install prompt available");
+      e.preventDefault();
+
+      // Cast to our interface
+      const installEvent = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(installEvent);
+      setShowInstallPrompt(true);
+
+      // Also store in window for backup
+      (window as any).deferredPrompt = installEvent;
+    };
+
+    const handleAppInstalled = () => {
+      console.log("✅ PWA was installed");
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
+
+  // Robust install handler
+  const handleInstallClick = async () => {
+    console.log("Install clicked, deferredPrompt:", !!deferredPrompt);
+
+    // Try multiple ways to get the prompt
+    let promptToUse = deferredPrompt || (window as any).deferredPrompt;
+
+    if (!promptToUse) {
+      console.log("No deferred prompt found, checking window...");
+      // Check if there's a global deferredPrompt
+      const globalPrompt = (window as any).deferredPrompt;
+      if (globalPrompt && typeof globalPrompt.prompt === "function") {
+        promptToUse = globalPrompt;
+      } else {
+        Alert.alert(
+          "Install Not Available",
+          "The install prompt is not available yet. Please wait a moment and try again."
+        );
+        return;
+      }
+    }
+
+    if (promptToUse && typeof promptToUse.prompt === "function") {
+      try {
+        console.log("Triggering install prompt...");
+        await promptToUse.prompt();
+        const { outcome } = await promptToUse.userChoice;
+        console.log(`User response: ${outcome}`);
+
+        // Clear the prompt after use
+        setDeferredPrompt(null);
+        setShowInstallPrompt(false);
+        (window as any).deferredPrompt = null;
+      } catch (error) {
+        console.error("Error triggering install prompt:", error);
+        Alert.alert(
+          "Install Error",
+          "Failed to trigger install prompt. Please try again."
+        );
+      }
+    } else {
+      console.error("Invalid deferred prompt:", promptToUse);
+      Alert.alert("Install Error", "Install feature is not available.");
+    }
+  };
   const handleSignUp = async () => {
     try {
       if (email === "" || password === "" || username === "") {
@@ -119,17 +207,26 @@ export default function AuthScreen() {
           const params = new URL(url).searchParams;
           const code = params.get("code");
           const accessToken = params.get("access_token");
-          
-          console.log("Auth success, code or token present:", !!code || !!accessToken);
-          
+
+          console.log(
+            "Auth success, code or token present:",
+            !!code || !!accessToken
+          );
+
           // Explicitly exchange the code for a session
           if (code || accessToken) {
             try {
-              const { data, error } = await supabase.auth.exchangeCodeForSession(code || accessToken || "");
-              
+              const { data, error } =
+                await supabase.auth.exchangeCodeForSession(
+                  code || accessToken || ""
+                );
+
               if (error) {
                 console.error("Error exchanging code:", error);
-                Alert.alert("Authentication Error", "Failed to complete authentication");
+                Alert.alert(
+                  "Authentication Error",
+                  "Failed to complete authentication"
+                );
               } else if (data.session) {
                 console.log("Session established:", data.session.user.email);
                 router.replace("/(tabs)/home");
@@ -139,7 +236,7 @@ export default function AuthScreen() {
               console.error("Code exchange error:", exchangeError);
             }
           }
-          
+
           // Fallback: check if we have a session after the redirect
           const { data: sessionData } = await supabase.auth.getSession();
           if (sessionData.session) {
@@ -251,6 +348,33 @@ export default function AuthScreen() {
             : "Don't have an account? Sign Up"}
         </Text>
       </TouchableOpacity>
+      {/* PWA Install Prompt */}
+      {showInstallPrompt && (
+        <View className="mt-6 p-4 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg w-full shadow-lg">
+          <Text className="text-white text-lg font-bold text-center mb-2">
+            📱 Install QuizQuezt App
+          </Text>
+          <Text className="text-white text-center mb-3 opacity-90">
+            Get the full app experience with offline access!
+          </Text>
+          <View className="flex-row space-x-3">
+            <TouchableOpacity
+              onPress={handleInstallClick}
+              className="flex-1 bg-white py-3 rounded-lg shadow"
+            >
+              <Text className="text-green-600 text-center font-bold text-lg">
+                Install Now
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowInstallPrompt(false)}
+              className="px-4 py-3 rounded-lg border border-white"
+            >
+              <Text className="text-white text-center font-bold">Later</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
